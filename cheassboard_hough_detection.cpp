@@ -80,7 +80,7 @@ int main() {
 
 	}
 
-
+/*
 	horizontalRhos = filterLines(horizontalRhos, 25.0f);
     	verticalRhos = filterLines(verticalRhos, 25.0f);
 
@@ -100,6 +100,29 @@ int main() {
         	return -1;
 	}
 
+*/
+
+
+std::vector<std::vector<cv::Point>> contours;
+cv::findContours(edges, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+double maxArea = 0;
+std::vector<cv::Point> maxContour;
+
+for (const auto& contour : contours) {
+    double area = cv::contourArea(contour);
+    if (area > maxArea) {
+        maxArea = area;
+        maxContour = contour;
+    }
+}
+
+cv::Rect boardRect = cv::boundingRect(maxContour);
+cv::rectangle(frame, boardRect, cv::Scalar(0, 255, 0), 2);
+
+
+int cellW = boardRect.width / 8;
+int cellH = boardRect.height / 8;
 
 	std::map<std::string, cv::Rect> boardSquares;
     	std::string cols = "ABCDEFGH";
@@ -107,6 +130,7 @@ int main() {
 
 	for(int r = 0; r < 8; ++r){
 		for(int c = 0; c < 8; ++c){
+			/*
 			int x = std::min((int)verticalRhos[c], (int)verticalRhos[c + 1]);
             		int y = std::min((int)horizontalRhos[r], (int)horizontalRhos[r + 1]);
             		int w = std::abs((int)verticalRhos[c + 1] - (int)verticalRhos[c]);
@@ -117,6 +141,19 @@ int main() {
 
 			cv::rectangle(frame, boardSquares[label], cv::Scalar(0, 255, 0), 1);
             		cv::putText(frame, label, cv::Point(x + 5, y + 15), cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0), 1);
+	*/
+	
+	int x = boardRect.x + c * cellW;
+        int y = boardRect.y + r * cellH;
+        cv::Rect cell(x, y, cellW, cellH);
+        std::string label = cols[c] + std::to_string(8 - r);
+        boardSquares[label] = cell;
+
+
+	cv::rectangle(frame, cell, cv::Scalar(0, 255, 0), 1);
+        cv::putText(frame, label, cv::Point(x + 5, y + 15), cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0), 1);
+	
+	
 		}
 	}
 
