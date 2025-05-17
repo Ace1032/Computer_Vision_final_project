@@ -56,7 +56,7 @@ int main() {
     	cv::Canny(blurred, edges, 50, 150);
 
 	std::vector<cv::Vec4i> lines;
-    	cv::HoughLinesP(edges, lines, 1, CV_PI / 180, 80, 30,10);
+    	cv::HoughLinesP(edges, lines, 1, CV_PI / 180, 40, 60,30);
 
 	std::vector<float> horizontalRhos, verticalRhos;
 
@@ -81,18 +81,18 @@ int main() {
 	}
 
 
-	horizontalRhos = filterLines(horizontalRhos);
-    	verticalRhos = filterLines(verticalRhos);
+	horizontalRhos = filterLines(horizontalRhos, 25.0f);
+    	verticalRhos = filterLines(verticalRhos, 25.0f);
 
 	std::sort(horizontalRhos.begin(), horizontalRhos.end());
 	std::sort(verticalRhos.begin(), verticalRhos.end());
 
 
 	if (horizontalRhos.size() > 9) {
-		horizontalRhos = std::vector<float>(horizontalRhos.begin() + 1, horizontalRhos.end() - 1);
+		horizontalRhos = std::vector<float>(horizontalRhos.begin(), horizontalRhos.begin() +9);
 	}
 	if (verticalRhos.size() > 9) {
-		verticalRhos = std::vector<float>(verticalRhos.begin() + 1, verticalRhos.end() - 1);
+		verticalRhos = std::vector<float>(verticalRhos.begin(), verticalRhos.begin() +9);
 	}
 
 	if(horizontalRhos.size() <9 || verticalRhos.size()<9){
