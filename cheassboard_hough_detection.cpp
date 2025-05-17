@@ -55,18 +55,29 @@ int main() {
     	cv::GaussianBlur(gray, blurred, cv::Size(5, 5), 0);
     	cv::Canny(blurred, edges, 50, 150);
 
-	std::vector<cv::Vec2f> lines;
-    	cv::HoughLines(edges, lines, 1, CV_PI / 180, 150);
+	std::vector<cv::Vec4i> lines;
+    	cv::HoughLinesP(edges, lines, 1, CV_PI / 180, 80, 30,10);
 
 	std::vector<float> horizontalRhos, verticalRhos;
 
 	for (const auto& l :lines) {
-        float rho = l[0], theta =l[1];
+       /* float rho = l[0], theta =l[1];
 	if ((theta < CV_PI * 0.25) || (theta > CV_PI * 0.75)) {
             verticalRhos.push_back(rho);
         } else {
             horizontalRhos.push_back(rho);
         }
+	*/
+
+	int x1 = l[0], y1 =l[1], x2 =l[2], y2 =l[3];
+	double angel =std::atan2(y2 - y1, x2 -x1)* 180 /CV_PI;
+	
+	if(std::abs(angel) <10){
+		horizontalRhos.push_back((y1+y2)/2.0f);
+	}else if(std::abs(angel -90) < 10 || std::abs(angel +90) <10) {
+		verticalRhos.push_back((x1+x2)/2.0f);
+		}
+
 	}
 
 
@@ -110,23 +121,27 @@ int main() {
 	}
 
 	for (const auto& [label, rect] : boardSquares) {
+		
+		if(rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= frame.cols && rect.y +rect.height <= frame.rows){
+			cv::Mat liveROI = frame(rect);
+                	cv::Mat refROI = refImage(rect);
 
-		cv::Mat liveROI = frame(rect);
-        	cv::Mat refROI = refImage(rect);
+			cv::Mat liveGray, refGray, diff;
+                	cv::cvtColor(liveROI, liveGray, cv::COLOR_BGR2GRAY);
+                	cv::cvtColor(refROI, refGray, cv::COLOR_BGR2GRAY);
+                	cv::absdiff(liveGray, refGray, diff);
 
-		cv::Mat liveGray, refGray, diff;
-        	cv::cvtColor(liveROI, liveGray, cv::COLOR_BGR2GRAY);
-        	cv::cvtColor(refROI, refGray, cv::COLOR_BGR2GRAY);
-        	cv::absdiff(liveGray, refGray, diff);
+			double score = cv::sum(diff)[0] / (diff.rows * diff.cols);
 
+			
+			if (score > 15.0) {
+                        std::cout << label << ": Piece detected" << std::endl;
+                        cv::rectangle(frame, rect, cv::Scalar(0, 0, 255), 2); // Red if piece
+                	}
 
-		double score = cv::sum(diff)[0] / (diff.rows * diff.cols);
-
-
-    		if (score > 15.0) {
-        		std::cout << label << ": Piece detected" << std::endl;
-        		cv::rectangle(frame, rect, cv::Scalar(0, 0, 255), 2); // Red if piece
-    		}
+		}else {
+			std::cerr << "Skipping invalid rect: " << label << std::endl;
+		}
 	}
 
 
