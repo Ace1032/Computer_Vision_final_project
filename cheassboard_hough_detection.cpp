@@ -158,7 +158,8 @@ int cellH = boardRect.height / 8;
 	}
 
 	for (const auto& [label, rect] : boardSquares) {
-		
+	
+		std::cout<<"Processing squre: "<<label<< std::endl;	
 		if(rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= frame.cols && rect.y +rect.height <= frame.rows){
 			cv::Mat liveROI = frame(rect);
                 	cv::Mat refROI = refImage(rect);
@@ -174,10 +175,60 @@ int cellH = boardRect.height / 8;
 			if (score > 15.0) {
                         std::cout << label << ": Piece detected" << std::endl;
                         cv::rectangle(frame, rect, cv::Scalar(0, 0, 255), 2); // Red if piece
-                	}
+                	
+			cv::Mat gray, binary;
+			cv::cvtColor(liveROI, gray, cv::COLOR_BGR2GRAY);
+			//cv::threshold(gray, binary, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
 
-		}else {
-			std::cerr << "Skipping invalid rect: " << label << std::endl;
+			
+			cv::adaptiveThreshold(gray, binary, 255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY_INV, 11, 2);
+
+			std::vector<std::vector<cv::Point>> pieceContours;
+			cv::findContours(binary, pieceContours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+			// Skip if no contours found
+			if (pieceContours.empty()){
+				std::cout << label << ": Could not identify shape (no contour)\n";
+    				continue;
+			} 
+
+			// Find the largest contour
+			int maxIndex = -1;
+			double maxArea = 0;
+			for (size_t i = 0; i < pieceContours.size(); ++i) {
+    				double area = cv::contourArea(pieceContours[i]);
+				cv::Rect bb = cv::boundingRect(pieceContours[i]);
+
+				if (area > 200.0 && bb.x > 5 && bb.x + bb.width < rect.width - 5 && bb.y > 5 && bb.y + bb.height < rect.height - 5) {
+    					if (area > maxArea) {
+        					maxArea = area;
+        					maxIndex = i;
+    					}
+				}
+
+			}
+
+			if(maxIndex != -1){
+				cv::Moments m = cv::moments(pieceContours[maxIndex]);
+                        	double hu[7];
+                        	cv::HuMoments(m, hu);
+                        	std::cout << label << ": Hu Moments = [ ";
+                        	for (int i = 0; i < 7; ++i)
+                                	std::cout << -std::copysign(1.0, hu[i]) * std::log10(std::abs(hu[i]) + 1e-10) << " ";
+                                	std::cout << "]" << std::endl;
+
+                //      cv::imshow(label + " Binary", binary);
+                //      cv::waitKey(1);
+
+                        	cv::drawContours(liveROI, pieceContours, maxIndex, cv::Scalar(255, 0, 0), 1);
+                        //	cv::imshow("Detected Contour: " + label, liveROI);
+			//	cv::waitKey(1);
+
+				}else{
+				std::cout << label << ": No valid contour for Hu moments\n";
+				}
+			
+
 		}
 	}
 
@@ -190,6 +241,6 @@ int cellH = boardRect.height / 8;
 
 }
 
-
+}
 
 

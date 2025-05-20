@@ -51,3 +51,36 @@ Develop a vision system that can:
 ```cpp
 std::sort(horizontalRhos.begin(), horizontalRhos.end());
 std::sort(verticalRhos.begin(), verticalRhos.end());
+
+
+
+## Replace horizontalRhos and verticalRhos to contour-based board detection
+
+### looking to improve 
+Robust to real-world imperfections
+Detects one clear board region
+Simple bounding box + divide by 8
+
+
+## Hu Moments for Chess Piece Classification
+
+for each detected pice conver the squre to binary using threshold
+Extract the Largest Contour
+Compute Hu Moments
+Compare to Known Templates
+most detected pices still giving the same Hu Moments
+replace threshold. 
+cv::threshold(gray, binary, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+using adaptive threshold insted:
+cv::adaptiveThreshold(gray, binary, 255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY_INV, 11, 2);
+
+
+## Issue: Detection Loop Stuck on First Square
+when running the program, the problem gets stuck on the first squre (A1) and does not proceed to analyze the rest of the chessboard.
+root cause:
+inside the loop for detecting pieces, the program attemps to calculate Hu Moments for a contour even when no valied contour was found
+
+
+
+
+###
